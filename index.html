@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Title</title>
+    <link href="./style.css" type="text/css" rel="stylesheet"/>
+    <!-- <script src="./app.js"></script> -->
+</head>
+<body>
+<div id="box">
+    <ul id="fill_in">
+        <form>
+            <li>内容：<textarea id="content"></textarea></li>
+            <li><input id="btn" type="button" value="提交" class="btn"/></li>
+        </form>
+    </ul>
+    <div id="message_text">
+        <ul class="list">
+            <!--<li>-->
+            <!--<p>我爱北京天安门</p>-->
+            <!--<p class="caozuo">-->
+	                    <!--<span>-->
+	                    	<!--2016-12-12-->
+	                    <!--</span>-->
+                <!--顶：<a class="ding" href="javascript:void(0)">0</a>-->
+                <!--踩：<a class="cai" href="javascript:void(0)">0</a>-->
+                <!--<a class="remove" href="javascript:void(0)">删除</a>-->
+            <!--</p>-->
+            <!--</li>-->
+        </ul>
+    </div>
+    <div id="page">
+        <!--<a href="javascript:void(0)" class="active">1</a>-->
+    </div>
+</div>
+</body>
+<script src="./jquery-1.12.3.min.js"></script>
+<script>
+    $(function(){
+        //文本域获取焦点
+        $("#content").focus();
+        //打开浏览器向浏览器插入五条数据，倒叙显示数据库中的最后五条数据
+        // $.ajax({
+        //     type:"get",
+        //     url:"/api/weibo/huoqu",
+        //     success:function (data) {
+        //         for(var i = 0; i < data.length; i++){
+        //             createLi(data[i]._id,data[i].content,data[i].time,data[i].ding,data[i].cai,true);
+        //         }
+        //     }
+        // })
+        getCurrentPageData(0);
+        pageCount(0);
+        //默认最初页为0
+        var nowPage = 0;
+        //打开浏览器自动检测数据库中数据条数，方便分页显示
+        function pageCount(nowPage){
+            $.ajax({
+                type:"get",
+                url:"/api/weibo/pageCount",
+                success:function (data){
+                    var pageCount = Math.ceil(data.length/5);
+                    $("#page").empty();
+                    for(var i = 0; i < pageCount; i++){
+                        var page = "<a href='javascript:void(0);'>"+(i+1)+"</a>";
+                        $("#page").append(page);
+                    }
+                    $("#page a").eq(nowPage).addClass("active");
+                }
+            });
+        }
+        
+
+        //获取第几页数据
+        function getCurrentPageData(current) {
+            $.ajax({
+                type:"get",
+                dataType:"json",
+                url:"/api/weibo/fenye",
+                data:{
+                    startIndex:current
+                },
+                success:function (data){
+                    $(".list").empty();
+                    for(var i = 0; i < data.length; i++){
+                        createLi(data[i]._id,data[i].content,data[i].time,data[i].ding,data[i].cai,true);
+                    }
+                    $("#page a").removeClass();
+                    $("#page a").eq(current).addClass("active");
+                    nowPage = current;
+                }
+            });
+        }
+
+        //分页
+        $(document).on("click","#page a",function(){
+            $(this).attr("class","active");
+            var startIndex = $(this).index();
+            getCurrentPageData(startIndex)
+        })
+
+        
+
+        //添加
+        $(document).on("click","#btn",function () {
+            if($("#content").val()==''){
+                return false;
+            }
+            //获取时间
+            var date = new Date();
+            var dateTime = date.toLocaleString();
+            $.ajax({
+                type:"get",
+                url:"/api/weibo/add",
+                data:{
+                    content:$("#content").val(),
+                    time:dateTime
+                },
+                success:function (data) {
+                    console.log(data);
+                    pageCount(nowPage)
+                    createLi(data[0]._id,data[0].content,data[0].time,data[0].ding,data[0].cai,false);
+                    getCurrentPageData(0)
+                    $("#content").val("");
+                    $("#content").focus();
+                }
+            })
+        })
+
+        //删除
+        $(document).on("click",".remove",function () {
+            var _that = $(this);
+            var id = _that.parents("li").attr("index");
+            var index = $("#page a[class=active]").html();
+            var indexMax = $("#page a").length;
+            $.ajax({
+                type:"get",
+                url:"/api/weibo/remove",
+                data:{
+                    id:id,
+                    index:index,
+                    indexMax:indexMax
+                },
+                success:function (data) {
+                    if(1==indexMax && $('.list').children().length <=1){$(".list,#page").empty();return false;}
+                    if($('.list').children().length <=1 ){
+                        nowPage--;
+                    }
+                    pageCount(nowPage);
+                    getCurrentPageData(nowPage)
+                }
+            })
+        })
+
+        //顶
+        $(document).on("click",".ding",function () {
+            var _that = $(this);
+            var id = _that.parents("li").attr("index");
+            var ding = _that.html();
+            $.ajax({
+                type:"get",
+                url:"/api/weibo/ding",
+                data:{
+                    id:id,
+                    ding:ding
+                },
+                success:function (data) {
+                    if(data.err == 0){
+                        _that.html(++ding);
+                    }
+                }
+            })
+        })
+
+        //踩
+        $(document).on("click",".cai",function () {
+            var _that = $(this);
+            var id = _that.parents("li").attr("index");
+            var cai = _that.html();
+            $.ajax({
+                type:"get",
+                url:"/api/weibo/cai",
+                data:{
+                    id:id,
+                    cai:cai
+                },
+                success:function (data) {
+                    if(data.err == 0) {
+                        console.log(data.msg);
+                        _that.html(++cai);
+                    }
+                }
+            })
+        })
+
+        //新建li
+        function createLi(id,content,time,ding,cai,bol){
+            var li = $('<li index='+id+'><p>'+content+'</p><p class="caozuo"><span>'+time+'</span> 顶：<a class="ding" href="javascript:void(0)">'+ding+'</a> 踩：<a class="cai" href="javascript:void(0)">'+cai+'</a> <a class="remove" href="javascript:void(0)">删除</a></p></li>');
+            if(bol){
+                $(".list").append(li);
+            }else{
+                $(".list").prepend(li);
+            }
+        }
+    })
+</script>
+</html>

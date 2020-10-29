@@ -1,10 +1,10 @@
 /*
  * @Author: lisaiqi
  * @Date: 2020-10-29 10:19:48
- * @LastEditTime: 2020-10-29 13:39:40
+ * @LastEditTime: 2020-10-29 14:00:02
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
- * @FilePath: \bird\models\Bird.js
+ * @FilePath: \bird\moduels\Bird.js
  */
 const mongoose = require('mongoose');
 var Schema = mongoose.Schema;

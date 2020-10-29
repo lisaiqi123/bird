@@ -1,4 +1,4 @@
-const Bird = require('../../models/Bird');
+const Bird = require('../../moduels/Bird');
 
 var express = require("express");
 const router = express.Router();
